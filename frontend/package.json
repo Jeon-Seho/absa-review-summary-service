@@ -1,0 +1,30 @@
+{
+  "name": "node_review_app",
+  "version": "1.0.0",
+  "description": "Node_Review_App",
+  "main": "server.js",
+  "scripts": {
+    "// [Mac/Linux용]": "가상환경 내부의 파이썬을 이용해 utils/app.py를 직접 실행합니다.",
+    "start:python:mac": "./.venv/bin/python utils/app.py",
+    "// [Windows용]": "파이썬을 이용해 utils/app.py를 직접 실행합니다.",
+    "start:python:win": "python utils/app.py",
+    "// [공통]": "Node.js 웹 서버를 실행하는 명령어입니다.",
+    "start:node": "node server.js",
+    "// [최종 실행 스크립트]": "팀원의 OS에 맞춰 아래 명령어 중 하나만 치면 가상환경->파이썬->노드가 순서대로 켜집니다.",
+    "dev:mac": "concurrently \"npm run start:python:mac\" \"npx wait-on http://localhost:8000 && npm run start:node\"",
+    "dev:win": "concurrently \"npm run start:python:win\" \"npx wait-on http://localhost:8000 && npm run start:node\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "axios": "^1.16.1",
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.0",
+    "wait-on": "^9.0.10"
+  }
+}
