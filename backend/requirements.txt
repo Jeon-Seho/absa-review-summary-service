@@ -1,0 +1,12 @@
+fastapi==0.136.3
+kss==6.0.6
+numpy==2.4.6
+playwright==1.59.0
+protobuf==3.20.3
+pydantic==2.13.4
+python-dotenv==1.2.2
+scikit_learn==1.8.0
+sentence_transformers==5.5.1
+torch==2.12.0
+transformers==5.9.0
+uvicorn==0.48.0
