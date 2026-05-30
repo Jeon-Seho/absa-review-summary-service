@@ -8,7 +8,7 @@ from aggregator import build_final_result
 
 import asyncio
 
-async def run(url: str, device, infer_model, tokenizer, embed_model, gemini_client) -> dict:
+async def run(url: str, device, infer_model, tokenizer, embed_model, gemini_client):
     print("---------- 크롤링 시작 ----------")
     yield {"step": "크롤링 중", "data": None}
     await asyncio.sleep(0)
