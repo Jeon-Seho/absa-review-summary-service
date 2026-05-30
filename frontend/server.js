@@ -30,24 +30,36 @@ app.post('/api/analyze', async (req, res) => {
     try {
         console.log(`[Node.js] 파이썬 AI 서버로 분석 위임 요청 전송: ${product_url}`);
         
+        // SSE 헤더 설정
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
         // 파이썬 FastAPI 서버 엔드포인트로 데이터 전송 및 로딩(await)
         const pythonResponse = await axios.post('http://localhost:8000/analyze', {
             url: product_url
+        }, {
+            responseType: 'stream'  // 스트리밍 모드
         });
 
-        // 파이썬이 돌려준 최종 JSON 응답 확인
-        if (pythonResponse.data.success) {
-            console.log(`[Node.js] 파이썬으로부터 연산 완료 결과 수신 완료.`);
-            // 브라우저(Client)에게 파이썬이 준 데이터를 그대로 출력
-            res.json({ success: true, data: pythonResponse.data.data });
-        } 
-        else {
-            res.status(500).json({ success: false, error: "파이썬 서버 연산 실패" });
-        }
+        // Python에서 오는 SSE를 브라우저로 그대로 전달
+        pythonResponse.data.on('data', (chunk) => {
+            res.write(chunk);
+        });
+
+        pythonResponse.data.on('end', () => {
+            res.end();
+        });
+
+        pythonResponse.data.on('error', (err) => {
+            res.write(`data: ${JSON.stringify({ step: 'error', data: err.message })}\n\n`);
+            res.end();
+        });
     } 
     catch (error) {
         console.error("[Node.js 내부 통신 에러]", error.message);
-        res.status(500).json({ success: false, error: "파이썬 AI 서버가 응답하지 않거나 연결할 수 없습니다." });
+        res.write(`data: ${JSON.stringify({ step: 'error', data: "파이썬 AI 서버가 응답하지 않거나 연결할 수 없습니다." })}\n\n`);
+        res.end();
     }
 });
 
