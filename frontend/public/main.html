@@ -116,8 +116,8 @@
                     <h3 class="text-xl font-bold text-white mb-2 font-geist"> 
                         리뷰를 분석 중입니다...
                     </h3>
-                    <p class="text-sm text-on-surface-variant max-w-[320px] leading-relaxed">
-                        수천 개의 소비자 데이터를 크롤링하여 다차원 감성 분석 모델 스코어를 도출하고 있습니다. 잠시만 기다려 주세요.
+                    <p id="loading-status" class="text-sm text-on-surface-variant max-w-[320px] leading-relaxed">
+                        리뷰 데이터를 크롤링하여 분석하고 있습니다. 잠시만 기다려 주세요.
                     </p>
                 </div>
 
@@ -135,23 +135,25 @@
         </footer>
 
         <script>
-            // 비동기 통신 로딩 UX 컨트롤 스크립트 함수
-            class AppAnalysis {
-                static async run(url) {
-                    const response = await fetch("/api/analyze", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ product_url: url })
-                    });
-                    return await response.json();
-                }
-            }
+            const statusMessages = {
+                "크롤링 중": "소비자 리뷰를 수집하고 있습니다...",
+                "추론 중": "리뷰 감정을 분석하고 있습니다...",
+                "분류 중": "감성 데이터를 분류하고 있습니다...",
+                "분석 중": "통계 분석 및 요약을 생성하고 있습니다...",
+            };
+
             async function startAnalysis() {
                 const urlInput = document.getElementById('product-url-input');
                 const urlValue = urlInput.value.trim();
-                
+
                 if (!urlValue) {
                     alert("상품 링크를 입력해 주세요!");
+                    urlInput.focus();
+                    return;
+                }
+
+                if (!urlValue.includes("https://www.11st.co.kr/products/")) {
+                    alert("올바른 11번가 상품 URL을 입력해 주세요!");
                     urlInput.focus();
                     return;
                 }
@@ -161,6 +163,7 @@
                 const heading = document.getElementById("main-heading");
                 const badge = document.getElementById("status-badge");
                 const loadingBox = document.getElementById("loading-container");
+                const statusEl = document.getElementById("loading-status");
 
                 searchBox.style.opacity = "0";
                 searchBox.style.transform = "translateY(10px)";
@@ -180,23 +183,37 @@
                     }, 50);
 
                     try {
-                        // 동일 포트 내 정적 서빙이므로 상대 경로로 유연하게 호출 가능
                         const response = await fetch('/api/analyze', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ product_url: urlValue })
                         });
-                        const resData = await response.json();
 
-                        if (resData.success) {
-                            localStorage.setItem('analysis_result', JSON.stringify(resData.data));
-                            localStorage.setItem('analysis_url', urlValue);
-                            window.location.href = '/sub.html'; // 결과 화면 리다이렉트
-                        } 
-                        else {
-                            alert('분석에 실패했습니다.'); window.location.reload();
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder();
+
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+
+                            const lines = decoder.decode(value).split("\n").filter(line => line.startsWith("data:"));
+
+                            for (const line of lines) {
+                                const event = JSON.parse(line.slice(6));
+
+                                if (event.step === "완료") {
+                                    localStorage.setItem('analysis_result', JSON.stringify(event.data));
+                                    localStorage.setItem('analysis_url', urlValue);
+                                    window.location.href = '/sub.html';
+                                } else if (event.step === "error") {
+                                    alert('분석에 실패했습니다.');
+                                    window.location.reload();
+                                } else {
+                                    if (statusEl) statusEl.textContent = statusMessages[event.step] ?? event.step;
+                                }
+                            }
                         }
-                    } 
+                    }
                     catch (err) {
                         console.error(err); alert('통신 장애가 발생했습니다.'); window.location.reload();
                     }
