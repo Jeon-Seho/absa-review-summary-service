@@ -1,6 +1,7 @@
 # 모델 생성, 호출 및 추론
 
 import sys, os
+from pathlib import Path
 import json
 from typing import Literal
 
@@ -8,9 +9,10 @@ import numpy as np
 import torch
 from transformers import AutoTokenizer
 
-sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+ROOT_DIR = Path(__file__).resolve().parent.parent
+sys.path.append(str(ROOT_DIR))
 
-from model.model import ABSAModelV3
+from model.model.make_model import ABSAModelV3
 
 ASPECT_LIST = ['가격', '음량/음질', '화질', '사이즈', '소음', '편의성', '디자인', '무게', '기능', '시간/속도', '조작성', '품질', '용량', '제품구성', '제조일/제조사',
 '색상', '내구성', '배터리', '소재']
@@ -20,8 +22,10 @@ def init_model() -> tuple:
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = ABSAModelV3(num_aspect=len(ASPECT_LIST)).to(device)
     
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    model_path = os.path.join(BASE_DIR, "model", "final_review_classifier_modelV3(KoElectra).pt")
+    # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # os.path.join(BASE_DIR, "model", "final_review_classifier_modelV3(KoElectra).pt")
+    
+    model_path = ROOT_DIR / "model" / "models" / "final_review_classifier_modelV3(KoElectra).pt"
 
     checkpoint = torch.load(
         model_path,

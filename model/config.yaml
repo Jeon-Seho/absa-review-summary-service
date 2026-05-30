@@ -1,0 +1,32 @@
+train_resume: False
+train_valid_resume: False
+final_resume: False
+
+# 1차는 비율통합, 2차는 5.20 V2 버전
+# 1차는 train_path -> train/valid 셋, val_path -> test 셋
+data:
+  path: "./datasets"
+  # train_path: "/Training_비율통합.csv"
+  # val_path: "/Validation_비율통합.csv"
+  train_path: "/Training(5.20)_V2.csv"
+  val_path: "사용안함"
+  test_path: "/Test(5.20)_V2.csv" # test_path는 2차에서만 사용
+  aspect_path: '/Aspect.csv'
+
+model:
+  save_path: "./models/best_review_classifier_model(KoElectra).pt"
+  train_valid_path: "./models/train_valid_review_classifier_modelV3(KoElectra).pt"
+  final_path: "./models/final_review_classifier_modelV3(KoElectra).pt"
+
+# epoch 1차는 5회, 2차는 15회로 맞춰두고 학습
+training:
+  epoch: 15
+  batch_size: 32
+  
+  checkpoint:
+    path: "./checkpoints/review_classifier_model.pt"
+
+optimizer:
+  lr: 0.00002
+
+seed: 42
