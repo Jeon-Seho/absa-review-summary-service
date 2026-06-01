@@ -58,7 +58,7 @@ app.post('/api/analyze', async (req, res) => {
     } 
     catch (error) {
         console.error("[Node.js 내부 통신 에러]", error.message);
-        res.write(`data: ${JSON.stringify({ step: 'error', data: "파이썬 AI 서버가 응답하지 않거나 연결할 수 없습니다." })}\n\n`);
+        res.write(`data: ${JSON.stringify({ step: 'error', data: "파이썬 서버가 응답하지 않거나 연결할 수 없습니다." })}\n\n`);
         res.end();
     }
 });
