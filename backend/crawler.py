@@ -1,22 +1,14 @@
 # 크롤링 수행(HTTP 요청, HTML 파싱, 노이즈 제거, 문장 분리)
 
-import asyncio
-import json
-import logging
-import os
-import re
-import sys
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set
-
 from playwright.async_api import Frame, Page, TimeoutError as PlaywrightTimeoutError, async_playwright
+from typing import Any, Dict, List, Optional, Set
+from dataclasses import dataclass
 
-_MECAB_PATH = r"C:\mecab"
-_USE_MECAB = os.path.exists(_MECAB_PATH)
-
-if hasattr(os, "add_dll_directory"):
-    if _USE_MECAB:
-        os.add_dll_directory(_MECAB_PATH)
+import asyncio
+import logging
+import sys, os
+import json
+import re
 import kss
 
 MAX_PER_RATING = 30         # 별점별 목표 수집 개수
@@ -70,19 +62,6 @@ def is_valid_review(text: str) -> bool:
     if re.search(r"(.{2,5})\1{4,}", text):
         return False
     return True
-
-
-# Logger 생성
-def setup_logger() -> logging.Logger:
-    logger = logging.getLogger("elevenst_reviews")
-    if logger.handlers:
-        return logger
-    logger.setLevel(logging.INFO)
-    logger.propagate = False
-    handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
-    logger.addHandler(handler)
-    return logger
 
 
 # 리뷰 섹션으로 이동
@@ -326,6 +305,20 @@ async def collect_reviews(frame: Frame, logger: logging.Logger) -> Dict[int, Lis
     return bucket
 
 
+# 상품명 추출
+async def extract_product_name(page: Page, logger: logging.Logger) -> Optional[str]:
+    JS = "() => (document.querySelector('h1.title')?.textContent || '').trim()"
+    try:
+        value = await page.evaluate(JS)
+        if value:
+            logger.info("상품명 추출 성공: %s", value)
+            return value
+    except Exception:
+        pass
+    logger.warning("상품명을 찾지 못했습니다.")
+    return None
+
+
 # 평균 별점 추출
 async def extract_average_review_rate(page: Page, frame: Frame, logger: logging.Logger) -> Optional[str]:
     JS = "() => (document.querySelector('div.c_product_review_rate1 em')?.textContent || '').trim()"
@@ -344,7 +337,7 @@ async def extract_average_review_rate(page: Page, frame: Frame, logger: logging.
 
 # 메인 함수
 async def fetch_reviews(url: str) -> Dict[str, Any]:
-    logger = setup_logger()
+    logger = logging.getLogger("logger")
 
     try:
         async with async_playwright() as pw:
@@ -357,6 +350,7 @@ async def fetch_reviews(url: str) -> Dict[str, Any]:
                 raise RuntimeError("리뷰 iframe(review-frame)을 찾지 못했습니다.")
 
             average_review_rate = await extract_average_review_rate(page, frame, logger)
+            product_name = await extract_product_name(page, logger)
             bucket = await collect_reviews(frame, logger)
             await browser.close()
 
@@ -367,6 +361,7 @@ async def fetch_reviews(url: str) -> Dict[str, Any]:
             logger.info("모든 평점(1~5점)에서 %s개씩 수집을 완료했습니다.", MAX_PER_RATING)
 
         output = {
+            "product_name": product_name,
             "average_review_rate": average_review_rate,
             "reviews_by_rating": {
                 rating: [item.text for item in items]
@@ -378,12 +373,13 @@ async def fetch_reviews(url: str) -> Dict[str, Any]:
 
         for key in output["reviews_by_rating"].keys():
             for content in output["reviews_by_rating"][key]:
-                sentences = kss.split_sentences(content, backend="mecab") if _USE_MECAB else kss.split_sentences(content)
+                sentences = kss.split_sentences(content, backend="mecab")
 
                 for sentence in sentences:
                     result.append(sentence)
          
         return {
+            "product_name": output["product_name"],
             "average_review_rate": output["average_review_rate"],
             "sentences": result,
         }
