@@ -305,6 +305,20 @@ async def collect_reviews(frame: Frame, logger: logging.Logger) -> Dict[int, Lis
     return bucket
 
 
+# 상품명 추출
+async def extract_product_name(page: Page, logger: logging.Logger) -> Optional[str]:
+    JS = "() => (document.querySelector('h1.title')?.textContent || '').trim()"
+    try:
+        value = await page.evaluate(JS)
+        if value:
+            logger.info("상품명 추출 성공: %s", value)
+            return value
+    except Exception:
+        pass
+    logger.warning("상품명을 찾지 못했습니다.")
+    return None
+
+
 # 평균 별점 추출
 async def extract_average_review_rate(page: Page, frame: Frame, logger: logging.Logger) -> Optional[str]:
     JS = "() => (document.querySelector('div.c_product_review_rate1 em')?.textContent || '').trim()"
@@ -336,6 +350,7 @@ async def fetch_reviews(url: str) -> Dict[str, Any]:
                 raise RuntimeError("리뷰 iframe(review-frame)을 찾지 못했습니다.")
 
             average_review_rate = await extract_average_review_rate(page, frame, logger)
+            product_name = await extract_product_name(page, logger)
             bucket = await collect_reviews(frame, logger)
             await browser.close()
 
@@ -346,6 +361,7 @@ async def fetch_reviews(url: str) -> Dict[str, Any]:
             logger.info("모든 평점(1~5점)에서 %s개씩 수집을 완료했습니다.", MAX_PER_RATING)
 
         output = {
+            "product_name": product_name,
             "average_review_rate": average_review_rate,
             "reviews_by_rating": {
                 rating: [item.text for item in items]
@@ -363,6 +379,7 @@ async def fetch_reviews(url: str) -> Dict[str, Any]:
                     result.append(sentence)
          
         return {
+            "product_name": output["product_name"],
             "average_review_rate": output["average_review_rate"],
             "sentences": result,
         }
