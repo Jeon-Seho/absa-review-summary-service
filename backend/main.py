@@ -1,48 +1,67 @@
 # 메인
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import service
+
+from sentence_transformers import SentenceTransformer
+from pathlib import Path
+from dotenv import load_dotenv
+from google import genai
 
 import uvicorn
 import os
 import json
-from pathlib import Path
 import gdown
-from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
-from google import genai
+import logging
 
-from inference import init_model
+import inference
+import service
 
-def download_model_weight():
+# 모델 가중치 다운로드
+def download_model_weight(logger: logging.Logger):
     ROOT_DIR = Path(__file__).resolve().parent.parent
     model_path = ROOT_DIR / "model" / "models" / "final_review_classifier_modelV3(KoElectra).pt"
     
     if not os.path.exists(model_path):
-        print("---------- 모델 가중치 다운로드 시작 ----------")
+        logger.warning("모델 가중치가 존재하지 않습니다.")
+        logger.info("모델 가중치 다운로드를 시작합니다.")
         FILE_ID = "1qEpGCKx7XxWs19RqBqIWdDH7vP9a2rBj"
-        gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", model_path, quiet=False)
-        print("---------- 모델 가중치 다운로드 완료 ----------\n")
+        gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", str(model_path), quiet=False)
+        logger.info("모델 가중치 다운로드를 완료했습니다.")
     else:
-        print("---------- 모델 가중치 존재 ----------")
+        logger.info("모델 가중치가 존재합니다.")
+        
+
+# Logger 생성
+def setup_logger() -> logging.Logger:
+    logger = logging.getLogger("logger")
+    if logger.handlers:
+        return logger
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+    logger.addHandler(handler)
+    
+    return logger
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 서버 시작 시 실행
     load_dotenv()
-    download_model_weight()
+    logger = setup_logger()
+    download_model_weight(logger)
     
-    print("---------- lifespan: 모델 로딩 시작 ----------")
-    app.state.device, app.state.infer_model, app.state.tokenizer = init_model()
-    print("---------- lifespan: 모델 로딩 완료 ----------\n")
+    logger.info("lifespan: 모델 로딩을 시작합니다.")
+    app.state.device, app.state.infer_model, app.state.tokenizer = inference.init_model()
+    logger.info("lifespan: 모델 로딩을 완료했습니다.")
     
-    print("---------- lifespan: 임베드 모델 로딩 시작 ----------")
+    logger.info("lifespan: 임베드 모델 로딩을 시작합니다.")
     app.state.embed_model = SentenceTransformer('jhgan/ko-sroberta-multitask')
-    print("----------lifespan: 임베드 모델 로딩 완료 ----------\n")
+    logger.info("lifespan: 임베드 모델 로딩을 완료했습니다.")
     
     app.state.gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
     app.state.gemini_client.models.generate_content_stream(
@@ -67,6 +86,9 @@ class AnalyzeRequest(BaseModel):
 
 @app.post("/analyze")
 async def analyze(req: AnalyzeRequest, request: Request):
+    logger = logging.getLogger("logger")
+    
+    logger.info(f"프론트엔드 요청 수신: {req.url}")
     async def event_stream():
         try:
             async for event in service.run(
@@ -81,7 +103,7 @@ async def analyze(req: AnalyzeRequest, request: Request):
         except Exception as e:
             import traceback
             traceback.print_exc()
-            # raise HTTPException(status_code=500, detail=str(e))
+            logger.warning(f"오류 발생: {str(e)}")
             yield f"data: {json.dumps({'step': 'error', 'data': str(e)}, ensure_ascii=False)}\n\n"
         
     return StreamingResponse(event_stream(), media_type="text/event-stream")

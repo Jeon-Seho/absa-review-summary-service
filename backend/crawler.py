@@ -72,19 +72,6 @@ def is_valid_review(text: str) -> bool:
     return True
 
 
-# Logger 생성
-def setup_logger() -> logging.Logger:
-    logger = logging.getLogger("elevenst_reviews")
-    if logger.handlers:
-        return logger
-    logger.setLevel(logging.INFO)
-    logger.propagate = False
-    handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
-    logger.addHandler(handler)
-    return logger
-
-
 # 리뷰 섹션으로 이동
 async def goto_reviews_section(page: Page, product_url: str, logger: logging.Logger) -> None:
     await page.goto(product_url, wait_until="domcontentloaded", timeout=60000)
@@ -344,7 +331,7 @@ async def extract_average_review_rate(page: Page, frame: Frame, logger: logging.
 
 # 메인 함수
 async def fetch_reviews(url: str) -> Dict[str, Any]:
-    logger = setup_logger()
+    logger = logging.getLogger("logger")
 
     try:
         async with async_playwright() as pw:
