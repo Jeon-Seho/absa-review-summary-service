@@ -8,6 +8,8 @@
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
         <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=Geist:wght@400;600;700&amp;display=swap" rel="stylesheet">
         
+
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <!-- CSS -->
         <style>
             body {
@@ -26,6 +28,21 @@
             .hero-gradient {
                 background: radial-gradient(circle at center, rgba(26, 95, 122, 0.15) 0%, transparent 70%);
             }
+            /* 다크 테마 커스텀 SweetAlert2 팝업 디자인 클래스 정의 */
+            .swal2-popup {
+                background: #04232e !important; 
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                color: #cae7f7 !important; 
+                border-radius: 12px !important;
+            }
+            .swal2-title { color: #ffffff !important; 
+                font-family: "Geist", sans-serif; 
+            }
+            .swal2-confirm { 
+                background-color: #1a5f7a !important; 
+                color: #9bd7f7 !important; 
+            }
+            /* ---- */
         </style>
         <script id="tailwind-config">
             tailwind.config = {
@@ -117,7 +134,7 @@
                         리뷰를 분석 중입니다...
                     </h3>
                     <p id="loading-status" class="text-sm text-on-surface-variant max-w-[320px] leading-relaxed">
-                        리뷰 데이터를 크롤링하여 분석하고 있습니다. 잠시만 기다려 주세요.
+                        리뷰 데이터를 수집하여 분석하고 있습니다. 잠시만 기다려 주세요.
                     </p>
                 </div>
 
@@ -135,6 +152,10 @@
         </footer>
 
         <script>
+            // SweetAlert2 공통 호출 핸들러 함수 정의
+            const showLuminaAlert = (title, text, icon = "error") => {
+                Swal.fire({ title: title, text: text, icon: icon, confirmButtonText: "확인" });
+            };
             const statusMessages = {
                 "크롤링 중": "소비자 리뷰를 수집하고 있습니다...",
                 "추론 중": "리뷰 감정을 분석하고 있습니다...",
@@ -143,17 +164,19 @@
             };
 
             async function startAnalysis() {
-                const urlInput = document.getElementById('product-url-input');
+                const urlInput = document.getElementById("product-url-input");
                 const urlValue = urlInput.value.trim();
 
                 if (!urlValue) {
-                    alert("상품 링크를 입력해 주세요!");
+                    // alert("상품 링크를 입력해 주세요!");
+                    showLuminaAlert("상품 링크를 입력해 주세요!", "분석을 진행할 상품 주소(URL)를 입력해 주세요.", "warning");
                     urlInput.focus();
                     return;
                 }
 
                 if (!urlValue.includes("https://www.11st.co.kr/products/")) {
-                    alert("올바른 11번가 상품 URL을 입력해 주세요!");
+                    // alert("올바른 11번가 상품 URL을 입력해 주세요!");
+                    showLuminaAlert("올바른 상품 링크를 입력해 주세요!", "11번가 상품 주소(URL)를 입력해 주세요.", "warning");
                     urlInput.focus();
                     return;
                 }
@@ -183,9 +206,9 @@
                     }, 50);
 
                     try {
-                        const response = await fetch('/api/analyze', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                        const response = await fetch("/api/analyze", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ product_url: urlValue })
                         });
 
@@ -206,8 +229,19 @@
                                     localStorage.setItem('analysis_url', urlValue);
                                     window.location.href = '/sub.html';
                                 } else if (event.step === "error") {
-                                    alert('분석에 실패했습니다.');
-                                    window.location.reload();
+                                    // alert("분석에 실패했습니다.");
+                                    // window.location.reload();
+                                    Swal.fire({
+                                        title: "분석에 실패했습니다.",
+                                        text: "서버 연산 도중 에러가 발생했습니다. 링크를 다시 점검해 주세요.",
+                                        icon: "error",
+                                        confirmButtonText: "확인"
+                                    }).then((result) => {
+                                        // 사용자가 확인 버튼을 누른 경우에만 실행
+                                        if (result.isConfirmed) {
+                                            window.location.reload();
+                                        }
+                                    });
                                 } else {
                                     if (statusEl) statusEl.textContent = statusMessages[event.step] ?? event.step;
                                 }
@@ -215,7 +249,18 @@
                         }
                     }
                     catch (err) {
-                        console.error(err); alert('통신 장애가 발생했습니다.'); window.location.reload();
+                        // alert("통신 장애가 발생했습니다.");
+                        // window.location.reload();
+                        Swal.fire({
+                            title: "통신 장애가 발생했습니다.",
+                            text: "백엔드 서버에 연결할 수 없습니다. 잠시 후 시도해 주세요.",
+                            icon: "error",
+                            confirmButtonText: "확인"
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                window.location.reload();
+                            }
+                        });
                     }
                 }, 400);
             }

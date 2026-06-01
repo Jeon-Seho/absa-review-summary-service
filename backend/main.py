@@ -84,6 +84,12 @@ app.add_middleware(
 class AnalyzeRequest(BaseModel):
     url: str
 
+# 서버 활성화 확인 엔드포인트
+@app.api_route("/", methods=["GET", "HEAD"])
+async def root_check():
+    return {"status": "healthy", "message": "Python Server is running"}
+
+# 로직 엔드포인트
 @app.post("/analyze")
 async def analyze(req: AnalyzeRequest, request: Request):
     logger = logging.getLogger("logger")
