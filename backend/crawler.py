@@ -1,22 +1,14 @@
 # 크롤링 수행(HTTP 요청, HTML 파싱, 노이즈 제거, 문장 분리)
 
-import asyncio
-import json
-import logging
-import os
-import re
-import sys
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set
-
 from playwright.async_api import Frame, Page, TimeoutError as PlaywrightTimeoutError, async_playwright
+from typing import Any, Dict, List, Optional, Set
+from dataclasses import dataclass
 
-_MECAB_PATH = r"C:\mecab"
-_USE_MECAB = os.path.exists(_MECAB_PATH)
-
-if hasattr(os, "add_dll_directory"):
-    if _USE_MECAB:
-        os.add_dll_directory(_MECAB_PATH)
+import asyncio
+import logging
+import sys, os
+import json
+import re
 import kss
 
 MAX_PER_RATING = 30         # 별점별 목표 수집 개수
@@ -365,7 +357,7 @@ async def fetch_reviews(url: str) -> Dict[str, Any]:
 
         for key in output["reviews_by_rating"].keys():
             for content in output["reviews_by_rating"][key]:
-                sentences = kss.split_sentences(content, backend="mecab") if _USE_MECAB else kss.split_sentences(content)
+                sentences = kss.split_sentences(content, backend="mecab")
 
                 for sentence in sentences:
                     result.append(sentence)
