@@ -15,34 +15,39 @@ logger = logging.getLogger("logger")
 async def run(url: str, device, infer_model, tokenizer, embed_model, gemini_client):
     total_t = time.perf_counter()
     
+    # 리뷰 수집 및 문장 분리
     logger.info("크롤링을 시작합니다.")
     yield {"step": "크롤링 중", "data": None}
     await asyncio.sleep(0)
     t = time.perf_counter()
-    output = await fetch_reviews(url)   # 리뷰 노이즈 제거, 크롤링 및 문장 분리
+    output = await fetch_reviews(url)
     logger.info(f"크롤링을 종료합니다. ({time.perf_counter() - t:.2f}s)")
     
+    # 모델 추론
     logger.info("추론을 시작합니다.")
     yield {"step": "추론 중", "data": None}
     await asyncio.sleep(0)
     t = time.perf_counter()
-    absa_result = infer(output["sentences"], device, infer_model, tokenizer)    # 모델 추론
+    absa_result = infer(output["sentences"], device, infer_model, tokenizer)
     logger.info(f"추론을 종료합니다. ({time.perf_counter() - t:.2f}s)")
     
+    # 추론 결과 분류
     logger.info("분류를 시작합니다.")
     yield {"step": "분류 중", "data": None}
     await asyncio.sleep(0)
     t = time.perf_counter()
-    sentiment_dict, aspect_sentiment_dict, representative_sentence_dict = classify_result(absa_result, embed_model) # 추론 결과 분류
+    sentiment_dict, aspect_sentiment_dict, representative_sentence_dict = classify_result(absa_result, embed_model)
     logger.info(f"분류를 종료합니다. ({time.perf_counter() - t:.2f}s)")
     
+    # 통계 계산, 요약 생성
     logger.info("분석을 시작합니다.")
     yield {"step": "분석 중", "data": None}
     await asyncio.sleep(0)
     t = time.perf_counter()
-    statistics_result, summary = await analyze(aspect_sentiment_dict, sentiment_dict, gemini_client)    # 분석 통계, 요약
+    statistics_result, summary = await analyze(aspect_sentiment_dict, sentiment_dict, gemini_client)
     logger.info(f"분석을 종료합니다. ({time.perf_counter() - t:.2f}s)")
     
+    # 결과 조립
     result = build_final_result(
         output,
         statistics_result,

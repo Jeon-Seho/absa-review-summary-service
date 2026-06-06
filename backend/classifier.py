@@ -9,8 +9,9 @@ from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import cosine_similarity
 import torch
 
-# 감정 기준 분리
+# 감정 기준 분류
 def classify_by_sentiment(results: list[dict]) -> list[dict]:
+    # 감정 분석 결과를 중복없이 집계
     sentiments_set = defaultdict(set)
     
     for result in results:
@@ -18,6 +19,7 @@ def classify_by_sentiment(results: list[dict]) -> list[dict]:
 
     sentiment_dict = {"pos": [], "neu": [], "neg": []}
 
+    # 3가지 감정 중 하나로 분류
     for sentence, sentiments in sentiments_set.items():
         final_sentiment = ""
 
@@ -36,11 +38,12 @@ def classify_by_sentiment(results: list[dict]) -> list[dict]:
     
     return sentiment_dict
     
-# 속성 별 감정 기준 분리
+# 속성 별 감정 기준 분류
 def classify_by_aspect_based_sentiment(results: list[dict]) -> list[dict]:
     aspect_sentiment_dict = {}
 
     for result in results:
+        # 처음 추가되는 속성인 경우 양식 삽입
         if result['aspect'] not in aspect_sentiment_dict:
             aspect_sentiment_dict[result['aspect']] = {"pos": [], "neu": [], "neg": []}
 
@@ -56,7 +59,7 @@ def select_representative_by_cluster(texts: str, embeddings, n_clusters: int = 3
     각 감성 그룹 내에서 최대 n_clusters개의 대표 리뷰를 추출합니다.
     리뷰 수가 n_clusters보다 적으면, 리뷰 수만큼만 클러스터를 만듭니다.
     """
-    # 💡 방어 코드: 요청한 개수보다 실제 리뷰 수가 적으면 클러스터 수를 리뷰 수에 맞춤
+    # 방어 코드: 요청한 개수보다 실제 리뷰 수가 적으면 클러스터 수를 리뷰 수에 맞춤
     n_clusters = min(n_clusters, len(texts))
 
     kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init="auto")
