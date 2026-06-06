@@ -53,6 +53,7 @@ def infer(sentences: list[str], device: Literal["cuda", "cpu"], model: ABSAModel
 
     with torch.no_grad():
         for idx, sentence in enumerate(sentences):
+            # 문장 인코딩
             encoding = tokenizer(
                 sentence,
                 return_tensors="pt",
@@ -62,16 +63,22 @@ def infer(sentences: list[str], device: Literal["cuda", "cpu"], model: ABSAModel
             )
             encoding = {k: v.to(device) for k, v in encoding.items()}
 
+            # 모델 예측
             aspect_logits, sentiment_logits = model(**encoding)
-
+            
+            # 속성 존재 여부 확인(Sigmoid)
             aspect_probs = torch.sigmoid(aspect_logits)[0].cpu().numpy()
+            # 감정 인덱스 선택(Argmax)
             sentiment_ids = torch.argmax(sentiment_logits, dim=-1)[0].cpu().numpy()
 
+            # 속성 인덱스 선택
             selected_idx = np.where(aspect_probs >= THRESHOLD)[0]
 
+            # 속성 인덱스 강제 선택
             if len(selected_idx) == 0 and USE_FALLBACK_TOP1:
                 selected_idx = np.array([int(np.argmax(aspect_probs))])
 
+            # 결과 정리
             for i in selected_idx:
                 results.append({
                     "sentence": sentences[idx],
