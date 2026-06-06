@@ -10,10 +10,11 @@ def bayesian_score(positive_ratio: float, n: int, global_mean: float, C: float) 
 
 # 통계 계산
 def calc_statistics(aspect_sentiment_dict: dict) -> dict:
-    aspect_statistics = {}
-    total_statistics = [0, 0, 0]
+    aspect_statistics = {}          # 속성 통계
+    total_statistics = [0, 0, 0]    # 전체 통계
 
     for key, value in aspect_sentiment_dict.items():
+        # 리뷰 수 계산
         pos_len = len(value["pos"])
         neu_len = len(value["neu"])
         neg_len = len(value["neg"])
@@ -74,7 +75,7 @@ def calc_score(aspect_statistics: dict, total_statistics: list[int]) -> dict:
         score_list[key] = score
 
         weight = value["total_len"] / total_len     # 리뷰 수 비례 가중치
-        final_score += score * weight
+        final_score += score * weight               # 가중합산
     
     # print(score_list)
 
@@ -107,12 +108,14 @@ async def generate_summary(sentiment_dict: dict, gemini_client: genai.Client) ->
     
     user_contents = f"분석할 리뷰 데이터(JSON):\n```json\n{json.dumps(sentiment_dict, ensure_ascii=False, indent=2)}\n```"
     
+    # Gemini 옵션 설정
     config = types.GenerateContentConfig(
         system_instruction=SYSTEM_PROMPT,
         temperature=0.1,
         max_output_tokens=500
     )
     
+    # 답변 생성
     stream = gemini_client.models.generate_content_stream(
         model="gemini-3.1-flash-lite",
         contents=user_contents,
@@ -127,7 +130,7 @@ async def generate_summary(sentiment_dict: dict, gemini_client: genai.Client) ->
     return result.strip()
 
 async def analyze(aspect_sentiment_dict: dict, sentiment_dict: dict, gemini_client: genai.Client) -> tuple[dict, str]:
-    statistics_result = calc_statistics(aspect_sentiment_dict) # 통계
+    statistics_result = calc_statistics(aspect_sentiment_dict)              # 통계
     summary_result = await generate_summary(sentiment_dict, gemini_client)  # 요약
     
     return statistics_result, summary_result

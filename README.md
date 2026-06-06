@@ -28,9 +28,7 @@
 ├── frontend/
 │   ├── public/
 │       ├── main.html         # 메인 페이지
-│       └── sub.html          # 결과 페이지 
-│   ├── utils/
-│       └── app.py            # 테스트 목적 임시 백엔드
+│       └── sub.html          # 결과 페이지
 │   ├── server.js             # Node.js Express 서버
 │   ├── package.json
 │   ├── package-lock.json
@@ -42,7 +40,7 @@
 │   ├── dataset/
 │       ├── __init__.py
 │       └── make_dataset.py   # 학습 데이터셋 생성
-│   ├── datasets/
+│   ├── datasets/             # 학습 데이터 저장 디렉토리
 │       └── Aspect.csv        # 속성
 │   ├── model/
 │       ├── __init__.py
@@ -68,6 +66,10 @@
 
 - Python 3.10+
 - Node.js 18+
+- Microsoft Windows
+
+> [!WARNING]
+> macOS 환경의 경우, Mecab 설치 및 GPU 가속 설정 단계에서 문제가 발생할 수 있습니다.
 
 ### 환경 변수
 
@@ -100,10 +102,24 @@ node server.js
 
 브라우저에서 'http://localhost:5001' 접속
 
+## 지원 항목
+
+11번가에서 판매 중인 IT기기(컴퓨터, 휴대폰, 카메라, 게임기, 태블릿, 자동차기기)에 대해 지원합니다.
+
 ## 모델 가중치
 
 서버 시작 시 model/models 디렉토리에 가중치 파일이 없으면 Google Drive에서 자동으로 다운로드됩니다.
 
-## 지원 항목
+## 학습 데이터
 
-11번가에서 판매 중인 IT기기(컴퓨터, 휴대폰, 카메라, 게임기, 태블릿, 자동차기기)에 대해 지원합니다.
+본 프로젝트는 AI Hub에서 제공하는 [속성 기반 감정 분석 데이터](https://aihub.or.kr/aihubdata/data/view.do?dataSetSn=71603)를 활용하였습니다.
+해당 데이터는 AI Hub의 이용정책에 따라, 승인받지 않은 제3자에게 열람, 제공, 양도, 대여 및 판매하는 것이 금지되어있습니다.
+
+## 팀원
+선문대학교 컴퓨터공학부 기계학습프로젝트 12분반 5조
+| 이름 | 역할 | GitHub |
+| :---: | :---: | :---: |
+| **박영진** | 팀장 / 모델 설계 | [@yungjin702](https://github.com/yungjin702) |
+| **윤홍규** | 팀원 / 프론트엔드 | [@ghdrb1246](https://github.com/ghdrb1246) |
+| **전세호** | 팀원 / 백엔드 | [@Jeon-Seho](https://github.com/Jeon-Seho) |
+| **차무관** | 팀원 / 데이터 전처리, 백엔드 보조 | [@ChaMooKwan](https://github.com/ChaMooKwan) |
