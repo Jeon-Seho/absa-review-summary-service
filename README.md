@@ -68,8 +68,8 @@
 - Node.js 18+
 - Microsoft Windows
 
-[!WARNING]
-macOS 환경의 경우, Mecab 설치 및 GPU 가속 설정 단계에서 문제가 발생할 수 있습니다.
+> [!WARNING]
+> macOS 환경의 경우, Mecab 설치 및 GPU 가속 설정 단계에서 문제가 발생할 수 있습니다.
 
 ### 환경 변수
 
